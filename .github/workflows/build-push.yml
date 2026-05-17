@@ -19,8 +19,15 @@ on:
         default: false
 
 jobs:
-  amd64:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
     steps:
@@ -34,29 +41,11 @@ jobs:
           docker load < result
       - uses: actions/upload-artifact@v4
         with:
-          name: docker-image-amd64
-          path: result
-
-  arm64:
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build image
-        run: |
-          nix build "${{ inputs.flake-attr }}"
-          docker load < result
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker-image-arm64
+          name: docker-image-${{ matrix.arch }}
           path: result
 
   push:
-    needs: [amd64, arm64]
+    needs: build
     if: ${{ inputs.push-on-pr || github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     services:
@@ -75,7 +64,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push multi-arch manifest
+      - name: Assemble and push multi-arch manifest
         env:
           IMAGE: ${{ inputs.image }}
         run: |
