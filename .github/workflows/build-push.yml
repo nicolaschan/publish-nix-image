@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ".#docker"
+      push-on-pr:
+        description: "Push the image when running on pull_request events. Default false: PRs build both archs to validate but skip the push job, so :latest is never overwritten by in-flight PR code."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   amd64:
@@ -52,6 +57,7 @@ jobs:
 
   push:
     needs: [amd64, arm64]
+    if: ${{ inputs.push-on-pr || github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     services:
       registry:

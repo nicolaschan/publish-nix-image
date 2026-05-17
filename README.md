@@ -32,10 +32,11 @@ Each run pushes two tags: `:latest` and `:<ref>-<run_id>`.
 
 ## Inputs
 
-| Input        | Required | Default     | Description                                       |
-| ------------ | -------- | ----------- | ------------------------------------------------- |
-| `image`      | yes      | —           | Destination image, e.g. `ghcr.io/org/name`        |
-| `flake-attr` | no       | `.#docker`  | Flake attribute producing a `dockerTools` image   |
+| Input         | Required | Default    | Description                                                                                                       |
+| ------------- | -------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `image`       | yes      | —          | Destination image, e.g. `ghcr.io/org/name`                                                                        |
+| `flake-attr`  | no       | `.#docker` | Flake attribute producing a `dockerTools` image                                                                   |
+| `push-on-pr`  | no       | `false`    | Push the image on `pull_request` events. Default skips the push job on PRs so `:latest` is never overwritten by in-flight PR code; both archs still build to validate. Set `true` to opt in. |
 
 ## Custom flake attribute
 
@@ -48,6 +49,6 @@ with:
 ## Notes
 
 - The caller must grant `permissions: packages: write`. Authentication uses `secrets.GITHUB_TOKEN`.
-- **`:latest` is pushed on every run, including PRs.** Gate with `if: github.event_name == 'push'` on the calling job if that's not what you want.
+- PRs build both archs to validate the Nix build, but skip the push job by default — set `push-on-pr: true` to push from PRs as well.
 - Per-arch images are pushed to an ephemeral in-job registry first, so only the combined manifest ever appears on your public registry — no `tag-amd64` / `tag-arm64` clutter.
 - Uses `ubuntu-24.04-arm` for arm64: free on public repos, varies by plan on private ones.
